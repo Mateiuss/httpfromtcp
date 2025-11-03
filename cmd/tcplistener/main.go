@@ -45,8 +45,7 @@ func getLinesChannel(f io.ReadCloser) <-chan string {
 }
 
 func main() {
-	l, err := net.Listen("tcp4", "127.0.0.1:42069")
-
+	l, err := net.Listen("tcp", ":42069")
 	if err != nil {
 		return
 	}
@@ -55,7 +54,6 @@ func main() {
 
 	for {
 		conn, err := l.Accept()
-
 		if err != nil {
 			continue
 		}
