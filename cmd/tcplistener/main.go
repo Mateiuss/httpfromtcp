@@ -2,47 +2,9 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"strings"
 	"net"
+	"thechallange/internal/request"
 )
-
-func getLinesChannel(f io.ReadCloser) <-chan string {
-	out := make(chan string)
-
-	go func() {
-		defer f.Close()
-		defer close(out)
-
-		curr := ""
-
-		for {
-			b := make([]byte, 8)
-
-			_, err := f.Read(b)
-
-			if err == io.EOF {
-				break
-			}
-
-			s := string(b)
-			splits := strings.Split(s, "\n")
-
-			if len(splits) == 1 {
-				curr += splits[0]
-			} else {
-				out <- curr + splits[0]
-				curr = splits[1]
-			}
-		}
-
-		if len(curr) != 0 {
-			out <- curr
-		}
-	}()
-
-	return out
-}
 
 func main() {
 	l, err := net.Listen("tcp", ":42069")
@@ -60,9 +22,16 @@ func main() {
 
 		fmt.Printf("accepted a connection from %s\n", conn.RemoteAddr().String())
 
-		for line := range getLinesChannel(conn) {
-			fmt.Println(line)
+		r, err := request.RequestFromReader(conn)
+		if err != nil {
+			fmt.Println("error while getting the request from the connection")
+			continue
 		}
+
+		fmt.Printf("Request line:\n")
+		fmt.Printf("- Method: %s\n", r.RequestLine.Method)
+		fmt.Printf("- Target: %s\n", r.RequestLine.RequestTarget)
+		fmt.Printf("- Version: %s\n", r.RequestLine.HttpVersion)
 
 		fmt.Println("connection closed")
 	}
